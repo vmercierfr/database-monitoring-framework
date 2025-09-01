@@ -60,7 +60,16 @@ Determine whether it's a long-term growth trend requiring storage increase or ab
 
 ## Mitigation
 
+You must avoid reaching no disk space left situation.
 Increase RDS disk space
+
+- Fix the system that blocks PostgreSQL to recycle its WAL files
+{{< hint danger >}}
+
+  - If long-running transactions/queries: Cancel or kill the transactions
+  - If non-running replication slot: Delete replication slot
+
+- Increase RDS disk space
 
 {{< hint danger >}}
 {{% aws-rds-storage-increase-limitations %}}

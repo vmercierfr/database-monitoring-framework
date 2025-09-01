@@ -45,7 +45,7 @@ rules:
       severity: warning
     annotations:
       summary: "Less than 20% free disk space on at least one instance"
-      description: 'One or more RDS instances has <20% free disk space'
+      description: "One or more RDS instances has <20% free disk space"
 
   RDSDiskSpaceLimit:
     expr: max by (aws_account_id, aws_region, dbidentifier) (rds_free_storage_bytes{} * 100 / rds_allocated_storage_bytes{}) < 10
@@ -204,3 +204,12 @@ rules:
     annotations:
       summary: "RDS instance(s) use(s) a certificate with an expiration date inferior to 15 days"
       description: "{{ $value }} instance(s) of the AWS account ID={{ $labels.aws_account_id}} in region={{ $labels.aws_region }} use(s) a certificate with an expiration date inferior to 15 days"
+
+  RDSFullDiskSpace:
+    expr: max by (aws_account_id, aws_region, dbidentifier) (rds_instance_status{}) == -7
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance storage is full"
+      description: "{{ $labels.dbidentifier }} storage is full"
