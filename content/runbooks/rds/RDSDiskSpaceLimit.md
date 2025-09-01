@@ -60,51 +60,15 @@ Determine whether it's a long-term growth trend requiring storage increase or ab
 
 ## Mitigation
 
-You must avoid reaching no disk space left situation.
+Increase RDS disk space
 
-- Fix the system that blocks PostgreSQL to recycle its WAL files
-
-  - If long-running transactions/queries: Cancel or kill the transactions
-  - If non-running replication slot: Delete replication slot
-
-- Increase RDS disk space
-
-    {{< hint danger >}}
+{{< hint danger >}}
 {{% aws-rds-storage-increase-limitations %}}
 {{< /hint >}}
 
-    1. Set AWS_PROFILE
+{{% aws-rds-storage-increase-commands %}}
 
-        ```bash
-        export AWS_PROFILE=<AWS account>
-        ```
-
-    2. Determine the minimum storage for the increase
-        💡 RDS requires a minimal storage increase of 10%
-
-        ```bash
-        INSTANCE_IDENTIFIER=<replace with the RDS instance identifier>
-        ```
-
-        ```bash
-        aws rds describe-db-instances --db-instance-identifier ${INSTANCE_IDENTIFIER} \
-        | jq -r '{"Current IOPS": .DBInstances[0].Iops, "Current Storage Limit": .DBInstances[0].AllocatedStorage, "New minimum storage size": ((.DBInstances[0].AllocatedStorage|tonumber)+(.DBInstances[0].AllocatedStorage|tonumber*0.1|floor))}'
-        ```
-
-    3. Increase storage:
-
-        ```bash
-        NEW_ALLOCATED_STORAGE=<replace with new allocated storage in GB>
-        ```
-
-        ```bash
-        aws rds modify-db-instance --db-instance-identifier ${INSTANCE_IDENTIFIER} --allocated-storage ${NEW_ALLOCATED_STORAGE} --apply-immediately \
-        | jq .DBInstance.PendingModifiedValues
-        ```
-
-        ❗ If the RDS instance has replicas instances (replica or reporting), you must repeat the operation for all replicas to keep the same configuration between instances
-
-    4. Backport changes in Terraform
+1. Backport changes in Terraform
 
 ## Additional resources
 
