@@ -213,3 +213,12 @@ rules:
     annotations:
       summary: "{{ $labels.dbidentifier }} is close to reaching end of AWS standard support period"
       description: "{{ $labels.dbidentifier }} has {{ $value }} days remaining before end of standard support. Extended Support costs will apply after this period."
+
+  RDSExtendedSupport:
+    expr: max by (aws_account_id, aws_region, dbidentifier) (rds_extended_support_engine_remaining_days) < 90
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "{{ $labels.dbidentifier }} is close to reaching end of AWS extended support period"
+      description: "{{ $labels.dbidentifier }} has {{ $value }} days remaining before end of extended support. Amazon RDS will automatically upgrade your major engine version after this period."
