@@ -204,3 +204,12 @@ rules:
     annotations:
       summary: "RDS instance(s) use(s) a certificate with an expiration date inferior to 15 days"
       description: "{{ $value }} instance(s) of the AWS account ID={{ $labels.aws_account_id}} in region={{ $labels.aws_region }} use(s) a certificate with an expiration date inferior to 15 days"
+
+  RDSStandardSupport:
+    expr: max by (aws_account_id, aws_region, dbidentifier) (rds_standard_support_engine_remaining_days) < 60
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.dbidentifier }} is close to reaching end of AWS standard support period"
+      description: "{{ $labels.dbidentifier }} has {{ $value }} days remaining before end of standard support. Extended Support costs will apply after this period."

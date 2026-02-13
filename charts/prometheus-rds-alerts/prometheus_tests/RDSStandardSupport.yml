@@ -1,0 +1,92 @@
+rule_files:
+  - ../values.yaml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      # Instance with 59 days remaining (should alert)
+      - series: 'rds_standard_support_engine_remaining_days{aws_account_id="123456789012",aws_region="us-east-1",dbidentifier="db-instance-1"}'
+        values: '59 59 59 59 59 59 59 59 59 59 59 59'
+
+      # Instance with 60 days remaining (should not alert - boundary)
+      - series: 'rds_standard_support_engine_remaining_days{aws_account_id="123456789012",aws_region="us-east-1",dbidentifier="db-instance-2"}'
+        values: '60 60 60 60 60 60 60 60 60 60 60 60'
+
+      # Instance with 30 days remaining (should alert)
+      - series: 'rds_standard_support_engine_remaining_days{aws_account_id="123456789012",aws_region="eu-west-1",dbidentifier="db-instance-3"}'
+        values: '30 30 30 30 30 30 30 30 30 30 30 30'
+
+      # Instance with 100 days remaining (should not alert)
+      - series: 'rds_standard_support_engine_remaining_days{aws_account_id="123456789012",aws_region="us-west-2",dbidentifier="db-instance-4"}'
+        values: '100 100 100 100 100 100 100 100 100 100 100 100'
+
+      # Instance with 0 days remaining (should alert - critical case)
+      - series: 'rds_standard_support_engine_remaining_days{aws_account_id="123456789012",aws_region="ap-southeast-1",dbidentifier="db-instance-5"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0'
+
+    alert_rule_test:
+      # Test that alert fires after 1 hour (for=1h) for instance with 59 days
+      - eval_time: 61m
+        alertname: RDSStandardSupport
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              aws_account_id: "123456789012"
+              aws_region: "us-east-1"
+              dbidentifier: "db-instance-1"
+            exp_annotations:
+              summary: "db-instance-1 is close to reaching end of AWS standard support period"
+              description: "db-instance-1 has 59 days remaining before end of standard support. Extended Support costs will apply after this period."
+
+      # Test that alert fires for instance with 30 days
+      - eval_time: 61m
+        alertname: RDSStandardSupport
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              aws_account_id: "123456789012"
+              aws_region: "eu-west-1"
+              dbidentifier: "db-instance-3"
+            exp_annotations:
+              summary: "db-instance-3 is close to reaching end of AWS standard support period"
+              description: "db-instance-3 has 30 days remaining before end of standard support. Extended Support costs will apply after this period."
+
+      # Test that alert fires for instance with 0 days (critical case)
+      - eval_time: 61m
+        alertname: RDSStandardSupport
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              aws_account_id: "123456789012"
+              aws_region: "ap-southeast-1"
+              dbidentifier: "db-instance-5"
+            exp_annotations:
+              summary: "db-instance-5 is close to reaching end of AWS standard support period"
+              description: "db-instance-5 has 0 days remaining before end of standard support. Extended Support costs will apply after this period."
+
+      # Test that alert does NOT fire before 1 hour (for=1h)
+      - eval_time: 59m
+        alertname: RDSStandardSupport
+        exp_alerts: []
+
+      # Test that instances with >= 60 days do not trigger alert
+      - eval_time: 61m
+        alertname: RDSStandardSupport
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              aws_account_id: "123456789012"
+              aws_region: "us-east-1"
+              dbidentifier: "db-instance-1"
+          - exp_labels:
+              severity: warning
+              aws_account_id: "123456789012"
+              aws_region: "eu-west-1"
+              dbidentifier: "db-instance-3"
+          - exp_labels:
+              severity: warning
+              aws_account_id: "123456789012"
+              aws_region: "ap-southeast-1"
+              dbidentifier: "db-instance-5"
